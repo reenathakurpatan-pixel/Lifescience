@@ -21,30 +21,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.OfflinePin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.R
 import com.example.data.CsirSyllabusCatalog
 import com.example.model.AppThemeMode
 import com.example.model.ReaderFontScale
@@ -55,8 +48,6 @@ import com.example.ui.components.UnitBadge
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProgressScreen(
-    userDisplayName: String?,
-    userEmail: String?,
     progressMap: Map<String, TopicProgress>,
     notesCount: Int,
     fontScale: ReaderFontScale,
@@ -64,7 +55,6 @@ fun ProgressScreen(
     onSelectFontScale: (ReaderFontScale) -> Unit,
     onSelectThemeMode: (AppThemeMode) -> Unit,
     onOpenUnit: (Int) -> Unit,
-    onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val units = CsirSyllabusCatalog.allUnits
@@ -84,7 +74,7 @@ fun ProgressScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item(key = "account_card") {
+            item(key = "study_profile_card") {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
@@ -99,37 +89,23 @@ fun ProgressScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.AccountCircle,
+                            imageVector = Icons.Rounded.OfflinePin,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(44.dp)
+                            modifier = Modifier.size(40.dp)
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = userDisplayName?.takeIf { it.isNotBlank() } ?: "CSIR Aspirant",
+                                text = "CSIR NET Life Sciences Prep",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = userEmail ?: "Synced via Google Account",
+                                text = "Offline Mode · All bookmarks, progress & personal notes are saved on your device.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
                             )
-                        }
-                        OutlinedButton(
-                            onClick = onSignOut,
-                            modifier = Modifier
-                                .minimumInteractiveComponentSize()
-                                .testTag("sign_out_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.Logout,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.sign_out))
                         }
                     }
                 }

@@ -1,13 +1,9 @@
 <resources>
     <string name="app_name">BioPrep CSIR</string>
-    <string name="auth_headline">CSIR NET Life Sciences</string>
-    <string name="auth_subtitle">All 13 Official Units · High-Yield Pathways · PYQ Traps · Synced Personal Notes</string>
-    <string name="auth_sign_in_google">Sign in with Google</string>
     <string name="nav_syllabus">Syllabus</string>
     <string name="nav_saved">Saved</string>
     <string name="nav_notes">My Notes</string>
     <string name="nav_progress">Progress</string>
     <string name="search_hint">Search units, enzymes, pathways, PYQs…</string>
     <string name="add_note">New Note</string>
-    <string name="sign_out">Sign Out</string>
 </resources>

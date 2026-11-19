@@ -1,11 +1,5 @@
 package com.example.model
 
-import androidx.annotation.Keep
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.IgnoreExtraProperties
-import com.google.firebase.firestore.ServerTimestamp
-
 data class CsirUnit(
     val unitNumber: Int,
     val title: String,
@@ -67,33 +61,26 @@ enum class NoteTag(val label: String) {
     }
 }
 
-@Keep
-@IgnoreExtraProperties
 data class TopicProgress(
-    @DocumentId val id: String = "",
-    val userId: String = "",
-    val unitNumber: Long = 1L,
+    val id: String = "",
+    val unitNumber: Int = 1,
     val status: String = TopicStatus.NOT_STARTED.name,
     val bookmarked: Boolean = false,
-    @ServerTimestamp val createdAt: Timestamp? = null,
-    @ServerTimestamp val updatedAt: Timestamp? = null
+    val updatedAtMillis: Long = 0L
 ) {
     fun topicStatus(): TopicStatus = TopicStatus.fromRaw(status)
 }
 
-@Keep
-@IgnoreExtraProperties
 data class PersonalNote(
-    @DocumentId val id: String = "",
-    val userId: String = "",
-    val unitNumber: Long = 1L,
+    val id: String = "",
+    val unitNumber: Int = 1,
     val topicId: String? = null,
     val topicTitle: String? = null,
     val title: String = "",
     val content: String = "",
     val tag: String = NoteTag.REVISION.name,
-    @ServerTimestamp val createdAt: Timestamp? = null,
-    @ServerTimestamp val updatedAt: Timestamp? = null
+    val createdAtMillis: Long = 0L,
+    val updatedAtMillis: Long = 0L
 ) {
     fun noteTag(): NoteTag = NoteTag.fromRaw(tag)
 }

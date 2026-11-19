@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.CsirSyllabusCatalog
+import com.example.data.LocalStudyRepository
 import com.example.data.ReaderPreferencesRepository
-import com.example.data.StudySyncRepository
 import com.example.model.AppThemeMode
 import com.example.model.NoteTag
 import com.example.model.PersonalNote
@@ -13,8 +13,6 @@ import com.example.model.ReaderFontScale
 import com.example.model.TopicProgress
 import com.example.model.TopicStatus
 import com.example.model.UiState
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,9 +27,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class StudyViewModel(
-    private val syncRepository: StudySyncRepository,
-    private val prefsRepository: ReaderPreferencesRepository,
-    private val currentUserId: String
+    private val studyRepository: LocalStudyRepository,
+    private val prefsRepository: ReaderPreferencesRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -58,46 +55,35 @@ class StudyViewModel(
         )
 
     val progressState: StateFlow<UiState<Map<String, TopicProgress>>> =
-        syncRepository.observeTopicProgress(currentUserId)
+        studyRepository.observeTopicProgress()
             .map<List<TopicProgress>, UiState<Map<String, TopicProgress>>> { list ->
                 UiState.Success(list.associateBy { it.id })
             }
             .catch { error ->
-                val firestoreError = generateSequence(error) { it.cause }
-                    .filterIsInstance<FirebaseFirestoreException>()
-                    .firstOrNull()
-                if (firestoreError == null && error is CancellationException) throw error
-                val rootError = firestoreError ?: error
-                Log.w(TAG, "Error observing topic progress", rootError)
-                emit(UiState.Error(rootError.message ?: "Failed to sync study progress"))
+                if (error is CancellationException) throw error
+                Log.w(TAG, "Error loading topic progress", error)
+                emit(UiState.Error(error.message ?: "Failed to load study progress"))
             }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-                initialValue = UiState.Loading
+                initialValue = UiState.Success(emptyMap())
             )
 
     val notesState: StateFlow<UiState<List<PersonalNote>>> =
-        syncRepository.observePersonalNotes(currentUserId)
+        studyRepository.observePersonalNotes()
             .map<List<PersonalNote>, UiState<List<PersonalNote>>> { list ->
-                val sorted = list.sortedByDescending {
-                    it.updatedAt ?: it.createdAt ?: Timestamp(0, 0)
-                }
-                UiState.Success(sorted)
+                UiState.Success(list)
             }
             .catch { error ->
-                val firestoreError = generateSequence(error) { it.cause }
-                    .filterIsInstance<FirebaseFirestoreException>()
-                    .firstOrNull()
-                if (firestoreError == null && error is CancellationException) throw error
-                val rootError = firestoreError ?: error
-                Log.w(TAG, "Error observing personal notes", rootError)
-                emit(UiState.Error(rootError.message ?: "Failed to sync personal notes"))
+                if (error is CancellationException) throw error
+                Log.w(TAG, "Error loading personal notes", error)
+                emit(UiState.Error(error.message ?: "Failed to load personal notes"))
             }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-                initialValue = UiState.Loading
+                initialValue = UiState.Success(emptyList())
             )
 
     fun updateSearchQuery(query: String) {
@@ -116,8 +102,7 @@ class StudyViewModel(
         val currentStatus = existing?.topicStatus() ?: TopicStatus.NOT_STARTED
 
         viewModelScope.launch {
-            val result = syncRepository.upsertTopicProgress(
-                userId = currentUserId,
+            val result = studyRepository.upsertTopicProgress(
                 topicId = topicId,
                 unitNumber = topic.unitNumber,
                 status = currentStatus,
@@ -140,8 +125,7 @@ class StudyViewModel(
         val currentBookmarked = existing?.bookmarked ?: false
 
         viewModelScope.launch {
-            val result = syncRepository.upsertTopicProgress(
-                userId = currentUserId,
+            val result = studyRepository.upsertTopicProgress(
                 topicId = topicId,
                 unitNumber = topic.unitNumber,
                 status = newStatus,
@@ -166,8 +150,7 @@ class StudyViewModel(
     ) {
         viewModelScope.launch {
             val result = if (existingNoteId.isNullOrBlank()) {
-                syncRepository.createPersonalNote(
-                    userId = currentUserId,
+                studyRepository.createPersonalNote(
                     unitNumber = unitNumber,
                     topicId = topicId,
                     topicTitle = topicTitle,
@@ -176,8 +159,7 @@ class StudyViewModel(
                     tag = tag
                 )
             } else {
-                syncRepository.updatePersonalNote(
-                    userId = currentUserId,
+                studyRepository.updatePersonalNote(
                     noteId = existingNoteId,
                     unitNumber = unitNumber,
                     topicId = topicId,
@@ -199,7 +181,7 @@ class StudyViewModel(
 
     fun deleteNote(noteId: String) {
         viewModelScope.launch {
-            val result = syncRepository.deletePersonalNote(currentUserId, noteId)
+            val result = studyRepository.deletePersonalNote(noteId)
             result.onSuccess {
                 _toastEvents.tryEmit("Note deleted")
             }.onFailure { err ->
