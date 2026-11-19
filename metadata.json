@@ -1,0 +1,6 @@
+{
+  "name": "BioPrep CSIR",
+  "description": "Complete, well-organized CSIR NET Life Sciences study notes covering all 13 syllabus units, high-yield pathways, PYQ pointers, bookmarks, and personal revision notes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

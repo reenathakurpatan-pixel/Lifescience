@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidTopicStatus(status) {
+      return status in ['NOT_STARTED', 'REVISING', 'MASTERED'];
+    }
+
+    function isValidNoteTag(tag) {
+      return tag in ['MNEMONIC', 'PYQ_TRAP', 'FORMULA', 'REVISION'];
+    }
+
+    function isValidTopicProgress(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.unitNumber is int &&
+             data.unitNumber >= 1 &&
+             data.unitNumber <= 13 &&
+             data.status is string &&
+             isValidTopicStatus(data.status) &&
+             data.bookmarked is bool &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    function isValidPersonalNote(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.unitNumber is int &&
+             data.unitNumber >= 1 &&
+             data.unitNumber <= 13 &&
+             (!('topicId' in data) || (data.topicId is string && data.topicId.size() >= 1 && data.topicId.size() <= 100)) &&
+             (!('topicTitle' in data) || (data.topicTitle is string && data.topicTitle.size() >= 1 && data.topicTitle.size() <= 160)) &&
+             data.title is string &&
+             data.title.size() >= 1 &&
+             data.title.size() <= 120 &&
+             data.content is string &&
+             data.content.size() >= 1 &&
+             data.content.size() <= 5000 &&
+             data.tag is string &&
+             isValidNoteTag(data.tag) &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/topicProgress/{topicId} {
+      allow get: if isOwner(userId) && isValidId(topicId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(topicId) &&
+                       incoming().keys().hasAll(['userId', 'unitNumber', 'status', 'bookmarked', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'unitNumber', 'status', 'bookmarked', 'createdAt', 'updatedAt']) &&
+                       isValidTopicProgress(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(topicId) &&
+                       isValidTopicProgress(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().unitNumber == existing().unitNumber &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'bookmarked', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(topicId);
+    }
+
+    match /users/{userId}/notes/{noteId} {
+      allow get: if isOwner(userId) && isValidId(noteId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(noteId) &&
+                       incoming().keys().hasAll(['userId', 'unitNumber', 'title', 'content', 'tag', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'unitNumber', 'topicId', 'topicTitle', 'title', 'content', 'tag', 'createdAt', 'updatedAt']) &&
+                       isValidPersonalNote(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(noteId) &&
+                       isValidPersonalNote(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['unitNumber', 'topicId', 'topicTitle', 'title', 'content', 'tag', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(noteId);
+    }
+  }
+}

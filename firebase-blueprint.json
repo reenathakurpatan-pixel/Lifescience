@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "TopicProgress": {
+      "title": "TopicProgress",
+      "description": "Tracks a CSIR NET Life Sciences aspirant's study status and bookmark flag for a specific syllabus topic.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Google user UID owning this progress record."
+        },
+        "unitNumber": {
+          "type": "integer",
+          "description": "CSIR NET Life Sciences syllabus unit number (1 to 13)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["NOT_STARTED", "REVISING", "MASTERED"],
+          "description": "Current mastery status for the topic."
+        },
+        "bookmarked": {
+          "type": "boolean",
+          "description": "Whether the topic is bookmarked for quick revision."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated last update timestamp via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "unitNumber", "status", "bookmarked", "createdAt", "updatedAt"]
+    },
+    "PersonalNote": {
+      "title": "PersonalNote",
+      "description": "User-authored personal study note, mnemonic, formula sheet, or PYQ trap note linked to a CSIR NET unit/topic.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Google user UID owning this personal note."
+        },
+        "unitNumber": {
+          "type": "integer",
+          "description": "CSIR NET Life Sciences syllabus unit number (1 to 13)."
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Optional syllabus topic ID linked to this note."
+        },
+        "topicTitle": {
+          "type": "string",
+          "description": "Optional syllabus topic title linked to this note."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short descriptive title of the personal study note."
+        },
+        "content": {
+          "type": "string",
+          "description": "Body text of the personal revision note or mnemonic."
+        },
+        "tag": {
+          "type": "string",
+          "enum": ["MNEMONIC", "PYQ_TRAP", "FORMULA", "REVISION"],
+          "description": "Category tag for organizing revision notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated last update timestamp via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "unitNumber", "title", "content", "tag", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/topicProgress/{topicId}": {
+      "schema": {
+        "$ref": "#/entities/TopicProgress"
+      },
+      "description": "Per-user study mastery status and bookmark flags keyed by topicId."
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": {
+        "$ref": "#/entities/PersonalNote"
+      },
+      "description": "Per-user personal study notes, mnemonics, and PYQ pointers."
+    }
+  }
+}
